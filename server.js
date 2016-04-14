@@ -8,9 +8,15 @@ pg.connect(process.env.DATABASE_URL, function(error, client) {
 
   console.log('Database connection ready');
 
+  const query = client
+    .query('SELECT * FROM oapen_data;');
+    // .on('row', function(row) {
+    //   console.log(JSON.stringify(row));
+    // });
+
   router
     .get('/', function *(next) {
-      this.body = 'Hello World';
+      this.body = query;
     });
 
   app
