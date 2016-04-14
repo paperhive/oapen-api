@@ -8,17 +8,16 @@ pg.connect(process.env.DATABASE_URL, function(error, client) {
 
   console.log('Database connection ready');
 
-  var server = app.listen(process.env.PORT || 3000, function() {
-    var port = server.address().port;
-    console.log('App now running on port', port);
-  });
+  router
+    .get('/', function *(next) {
+      this.body = 'Hello World';
+    });
+
+  app
+    .use(router.routes())
+    .use(router.allowedMethods());
+
+  const port = process.env.PORT || 3000;
+  var server = app.listen(port);
+  console.log('App now running on port', port);
 });
-
-router
-  .get('/', function *(next) {
-    this.body = 'Hello World';
-  });
-
-app
-  .use(router.routes())
-  .use(router.allowedMethods());
