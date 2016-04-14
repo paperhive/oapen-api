@@ -1,29 +1,31 @@
-var app = require('koa')();
-var router = require('koa-router')();
-var pg = require('pg');
+const app = require('koa')();
+const bluebird = require('bluebird');
+const co = require('co');
+const router = require('koa-router')();
+const pg = require('pg');
 pg.defaults.ssl = true;
 
-pg.connect(process.env.DATABASE_URL, function(error, client) {
-  if(error) throw error;
+co(function *main() {
+  const connect = bluebird.promisify(pg.connect, {context: pg});
+  const client = yield connect(process.env.DATABASE_URL);
+  const query = bluebird.promisify(client.query, {context: client});
 
   console.log('Database connection ready');
 
-  // const query = client
-  //   .query('SELECT * FROM oapen_data;')
-  //   .on('row', function(row) {
-  //     console.log(JSON.stringify(row));
-  //   });
-
-  router
-    .get('/', function *(next) {
-      this.body = "Hello World";
-    });
+  router.get('/', function *(next) {
+    const data = yield query('SELECT * FROM oapen_data;')
+    this.body = data.rows;
+  });
 
   app
     .use(router.routes())
     .use(router.allowedMethods());
 
   const port = process.env.PORT || 3000;
-  var server = app.listen(port);
+  const server = app.listen(port);
   console.log('App now running on port', port);
+
+}).catch(error => {
+  console.error(error);
+  process.exit(1);
 });
