@@ -1,0 +1,23 @@
+{
+  "name": "oapen-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paperhive/oapen-api.git"
+  },
+  "author": "",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/paperhive/oapen-api/issues"
+  },
+  "homepage": "https://github.com/paperhive/oapen-api#readme",
+  "dependencies": {
+    "koa": "^1.2.0",
+    "koa-router": "^5.4.0"
+  }
+}
