@@ -4,6 +4,8 @@ const co = require('co');
 const router = require('koa-router')();
 const pg = require('pg');
 const request = require('request');
+const parseString = require('xml2js').parseString;
+
 pg.defaults.ssl = true;
 
 co(function *main() {
@@ -22,9 +24,12 @@ co(function *main() {
       // download data via npm request
 
       const response = yield bluebird.promisify(request)('http://www.xmlfiles.com/examples/note.xml');
-      this.body = response.body;
+      const xml = response.body;
 
       // parse data via xml2js
+      const result = yield bluebird.promisify(parseString)(xml);
+      this.body = result;
+
 
     });
 
