@@ -3,6 +3,7 @@ const bluebird = require('bluebird');
 const co = require('co');
 const router = require('koa-router')();
 const pg = require('pg');
+const request = require('request');
 pg.defaults.ssl = true;
 
 co(function *main() {
@@ -12,10 +13,20 @@ co(function *main() {
 
   console.log('Database connection ready');
 
-  router.get('/', function *(next) {
-    const data = yield query('SELECT * FROM oapen_data;')
-    this.body = data.rows;
-  });
+  router
+    .get('/', function *(next) {
+      const data = yield query('SELECT * FROM oapen_data;');
+      this.body = data.rows;
+    })
+    .post('/import', function *(next) {
+      // download data via npm request
+
+      const response = yield bluebird.promisify(request)('http://www.xmlfiles.com/examples/note.xml');
+      this.body = response.body;
+
+      // parse data via xml2js
+
+    });
 
   app
     .use(router.routes())
