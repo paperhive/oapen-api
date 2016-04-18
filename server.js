@@ -38,12 +38,12 @@ co(function *main() {
         // check if id is already in db
         let selectQuery = 'SELECT data FROM oapen_data WHERE id = $1::int LIMIT 1';
         let res = yield query(selectQuery, [product.RecordReference[0]]);
-        let row = res.rows[0].data;
+        let row = res.rows;
 
         // id is already in db
-        if (row) {
+        if (row.length > 0) {
           // compare JSON
-          let equal = _.isEqual(row, product);
+          let equal = _.isEqual(row[0].data, product);
           if (!equal) {
             // update record
             let updateQuery = 'UPDATE oapen_data SET timestamp=NOW(),data=$1 WHERE id=$2::int';
