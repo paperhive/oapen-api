@@ -1,3 +1,4 @@
+'use strict';
 const app = require('koa')();
 const bluebird = require('bluebird');
 const co = require('co');
@@ -28,17 +29,14 @@ co(function *main() {
       const xml = response.body;
 
       // parse data via xml2js
-      const results = yield bluebird.promisify(parseString)(xml);
-      this.body = results.ONIXMessage.Product[0].RecordReference[0];
+      const parsedData = yield bluebird.promisify(parseString)(xml);
+      const results = parsedData.ONIXMessage;
 
-      // upsert
-      // for (var i in results) {
-      //   const row = results[i];
-      //   const data = yield query('SELECT 1 FROM oapen_data WHERE id = 1;');
-      //   if (!data) {
-      //     // insert
-      //   }
-      // }
+      // insert
+      for (let product of results.Product) {
+        let queryText = 'INSERT INTO oapen_data(id, timestamp, data) VALUES($1, NOW(), $2)';
+        yield query(queryText, [parseInt(product.RecordReference[0]), product]);
+      }
 
     });
 
