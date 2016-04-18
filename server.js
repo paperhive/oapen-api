@@ -36,8 +36,8 @@ co(function *main() {
       // upsert
       for (let product of results.Product) {
         // check if id is already in db
-        let queryId = 'SELECT data FROM oapen_data WHERE id = $1::int LIMIT 1';
-        let res = yield query(queryId, [product.RecordReference[0]]);
+        let selectQuery = 'SELECT data FROM oapen_data WHERE id = $1::int LIMIT 1';
+        let res = yield query(selectQuery, [product.RecordReference[0]]);
         let row = res.rows[0].data;
 
         // id is already in db
@@ -52,12 +52,10 @@ co(function *main() {
         // id not yet in db
         } else {
           // add data to db
-          let queryText = 'INSERT INTO oapen_data(id, timestamp, data) VALUES($1::int, NOW(), $2)';
-          yield query(queryText, [product.RecordReference[0], product]);
+          let insertQuery = 'INSERT INTO oapen_data(id, timestamp, data) VALUES($1::int, NOW(), $2)';
+          yield query(insertQuery, [product.RecordReference[0], product]);
         }
-
       }
-
     });
 
   app
