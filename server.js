@@ -46,7 +46,8 @@ co(function *main() {
           let equal = _.isEqual(row, product);
           if (!equal) {
             // update record
-
+            let updateQuery = 'UPDATE oapen_data SET timestamp=NOW(),data=$1 WHERE id=$2::int';
+            yield query(updateQuery, [product, product.RecordReference[0]]);
           }
         // id not yet in db
         } else {
