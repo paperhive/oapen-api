@@ -6,7 +6,8 @@ const pg = require('pg');
 const request = require('request');
 const parseString = require('xml2js').parseString;
 
-pg.defaults.ssl = true;
+// enable SSL if DATABASE_SSL is not false
+pg.defaults.ssl = !(process.env.DATABASE_SSL === 'false');
 
 co(function *main() {
   const connect = bluebird.promisify(pg.connect, {context: pg});
@@ -20,16 +21,24 @@ co(function *main() {
       const data = yield query('SELECT * FROM oapen_data;');
       this.body = data.rows;
     })
+
     .post('/import', function *(next) {
       // download data via npm request
-
-      const response = yield bluebird.promisify(request)('http://www.xmlfiles.com/examples/note.xml');
+      const response = yield bluebird.promisify(request)('http://localhost:8000/oapen.onix3.0.xml');
       const xml = response.body;
 
       // parse data via xml2js
-      const result = yield bluebird.promisify(parseString)(xml);
-      this.body = result;
+      const results = yield bluebird.promisify(parseString)(xml);
+      this.body = results.ONIXMessage.Product[0].RecordReference[0];
 
+      // upsert
+      // for (var i in results) {
+      //   const row = results[i];
+      //   const data = yield query('SELECT 1 FROM oapen_data WHERE id = 1;');
+      //   if (!data) {
+      //     // insert
+      //   }
+      // }
 
     });
 
