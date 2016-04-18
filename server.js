@@ -6,6 +6,7 @@ const router = require('koa-router')();
 const pg = require('pg');
 const request = require('request');
 const parseString = require('xml2js').parseString;
+const _ = require('lodash');
 
 // enable SSL if DATABASE_SSL is not false
 pg.defaults.ssl = !(process.env.DATABASE_SSL === 'false');
@@ -32,10 +33,28 @@ co(function *main() {
       const parsedData = yield bluebird.promisify(parseString)(xml);
       const results = parsedData.ONIXMessage;
 
-      // insert
+      // upsert
       for (let product of results.Product) {
-        let queryText = 'INSERT INTO oapen_data(id, timestamp, data) VALUES($1, NOW(), $2)';
-        yield query(queryText, [parseInt(product.RecordReference[0]), product]);
+        // check if id is already in db
+        let queryId = 'SELECT data FROM oapen_data WHERE id = $1::int LIMIT 1';
+        let res = yield query(queryId, [product.RecordReference[0]]);
+        let row = res.rows[0].data;
+
+        // id is already in db
+        if (row) {
+          // compare JSON
+          let equal = _.isEqual(row, product);
+          if (!equal) {
+            // update record
+
+          }
+        // id not yet in db
+        } else {
+          // add data to db
+          let queryText = 'INSERT INTO oapen_data(id, timestamp, data) VALUES($1::int, NOW(), $2)';
+          yield query(queryText, [product.RecordReference[0], product]);
+        }
+
       }
 
     });
