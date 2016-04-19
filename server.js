@@ -20,20 +20,29 @@ co(function *main() {
 
   router
     // returns array of all ids (= RecordReferences)
-    .get('/', function *(next) {
-      const data = yield query('SELECT id FROM oapen_data;');
-      this.body = _.map(data.rows, 'id');
+    .get('/records', function *getRecords() {
+      const updatedAfter = this.request.query.updatedAfter;
+      const compact = this.request.query.compact === 'true';
+
+      const queryStr = `SELECT ${compact ? 'id, timestamp' : '*'} FROM oapen_data`;
+      let data;
+      if (updatedAfter) {
+        data = yield query(`${queryStr} WHERE timestamp >= $1`, [updatedAfter]);
+      } else {
+        data = yield query(queryStr);
+      }
+
+      this.body = data.rows;
     })
 
     // returns object (id, timestamp, data) of record with corresponding id
-    .get('/:id', function *(next) {
-      let selectData = 'SELECT * FROM oapen_data WHERE id = $1::int';
-      let resp = yield query(selectData, [this.params.id]);
+    .get('/records/:id', function *getRecord() {
+      const selectData = 'SELECT * FROM oapen_data WHERE id = $1::int';
+      const resp = yield query(selectData, [this.params.id]);
       this.body = resp.rows;
     })
 
-
-    .post('/import', function *(next) {
+    .post('/import', function *postImport() {
       // download data via npm request
       const response = yield bluebird.promisify(request)('http://localhost:8000/oapen.onix3.0.xml');
       const xml = response.body;
@@ -43,25 +52,25 @@ co(function *main() {
       const results = parsedData.ONIXMessage;
 
       // upsert
-      for (let product of results.Product) {
+      for (const product of results.Product) {
         // check if id is already in db
-        let selectQuery = 'SELECT data FROM oapen_data WHERE id = $1::int LIMIT 1';
-        let res = yield query(selectQuery, [product.RecordReference[0]]);
-        let row = res.rows;
+        const selectQuery = 'SELECT data FROM oapen_data WHERE id = $1::int LIMIT 1';
+        const res = yield query(selectQuery, [product.RecordReference[0]]);
+        const row = res.rows;
 
         // id is already in db
         if (row.length > 0) {
           // compare JSON
-          let equal = _.isEqual(row[0].data, product);
+          const equal = _.isEqual(row[0].data, product);
           if (!equal) {
             // update record
-            let updateQuery = 'UPDATE oapen_data SET timestamp = NOW(), data = $1 WHERE id = $2::int';
+            const updateQuery = 'UPDATE oapen_data SET timestamp = NOW() AT TIME ZONE \'utc\', data = $1 WHERE id = $2::int';
             yield query(updateQuery, [product, product.RecordReference[0]]);
           }
         // id not yet in db
         } else {
           // add data to db
-          let insertQuery = 'INSERT INTO oapen_data(id, timestamp, data) VALUES($1::int, NOW(), $2)';
+          const insertQuery = 'INSERT INTO oapen_data(id, timestamp, data) VALUES($1::int, NOW() AT TIME ZONE \'utc\', $2)';
           yield query(insertQuery, [product.RecordReference[0], product]);
         }
       }
@@ -72,9 +81,8 @@ co(function *main() {
     .use(router.allowedMethods());
 
   const port = process.env.PORT || 3000;
-  const server = app.listen(port);
+  app.listen(port);
   console.log('App now running on port', port);
-
 }).catch(error => {
   console.error(error);
   process.exit(1);
