@@ -19,10 +19,19 @@ co(function *main() {
   console.log('Database connection ready');
 
   router
+    // returns array of all ids (= RecordReferences)
     .get('/', function *(next) {
-      const data = yield query('SELECT * FROM oapen_data;');
-      this.body = data.rows;
+      const data = yield query('SELECT id FROM oapen_data;');
+      this.body = _.map(data.rows, 'id');
     })
+
+    // returns object (id, timestamp, data) of record with corresponding id
+    .get('/:id', function *(next) {
+      let selectData = 'SELECT * FROM oapen_data WHERE id = $1::int';
+      let resp = yield query(selectData, [this.params.id]);
+      this.body = resp.rows;
+    })
+
 
     .post('/import', function *(next) {
       // download data via npm request
@@ -46,7 +55,7 @@ co(function *main() {
           let equal = _.isEqual(row[0].data, product);
           if (!equal) {
             // update record
-            let updateQuery = 'UPDATE oapen_data SET timestamp=NOW(),data=$1 WHERE id=$2::int';
+            let updateQuery = 'UPDATE oapen_data SET timestamp = NOW(), data = $1 WHERE id = $2::int';
             yield query(updateQuery, [product, product.RecordReference[0]]);
           }
         // id not yet in db
