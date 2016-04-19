@@ -74,6 +74,7 @@ co(function *main() {
           yield query(insertQuery, [product.RecordReference[0], product]);
         }
       }
+      this.body = {message: 'success'};
     });
 
   app
