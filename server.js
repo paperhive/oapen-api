@@ -44,7 +44,7 @@ co(function *main() {
 
     .post('/import', function *postImport() {
       // download data via npm request
-      const response = yield bluebird.promisify(request)('http://localhost:8000/oapen.onix3.0.xml');
+      const response = yield bluebird.promisify(request)('http://oapen.org/download?type=export&export=onix3.0');
       const xml = response.body;
 
       // parse data via xml2js
