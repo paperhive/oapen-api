@@ -3,20 +3,14 @@ const app = require('koa')();
 const bluebird = require('bluebird');
 const co = require('co');
 const router = require('koa-router')();
-const pg = require('pg');
 const request = require('request');
 const parseString = require('xml2js').parseString;
 const _ = require('lodash');
 
-// enable SSL if DATABASE_SSL is not false
-pg.defaults.ssl = !(process.env.DATABASE_SSL === 'false');
+const database = require('./database');
 
 co(function *main() {
-  const connect = bluebird.promisify(pg.connect, {context: pg});
-  const client = yield connect(process.env.DATABASE_URL);
-  const query = bluebird.promisify(client.query, {context: client});
-
-  console.log('Database connection ready');
+  const db = yield database.init();
 
   router
     // returns array of all ids (= RecordReferences)
@@ -27,9 +21,9 @@ co(function *main() {
       const queryStr = `SELECT ${compact ? 'id, timestamp' : '*'} FROM oapen_data`;
       let data;
       if (updatedAfter) {
-        data = yield query(`${queryStr} WHERE timestamp >= $1`, [updatedAfter]);
+        data = yield db.query(`${queryStr} WHERE timestamp >= $1`, [updatedAfter]);
       } else {
-        data = yield query(queryStr);
+        data = yield db.query(queryStr);
       }
 
       this.body = data.rows;
@@ -38,7 +32,7 @@ co(function *main() {
     // returns object (id, timestamp, data) of record with corresponding id
     .get('/records/:id', function *getRecord() {
       const selectData = 'SELECT * FROM oapen_data WHERE id = $1::int';
-      const resp = yield query(selectData, [this.params.id]);
+      const resp = yield db.query(selectData, [this.params.id]);
       this.body = resp.rows;
     })
 
@@ -55,7 +49,7 @@ co(function *main() {
       for (const product of results.Product) {
         // check if id is already in db
         const selectQuery = 'SELECT data FROM oapen_data WHERE id = $1::int LIMIT 1';
-        const res = yield query(selectQuery, [product.RecordReference[0]]);
+        const res = yield db.query(selectQuery, [product.RecordReference[0]]);
         const row = res.rows;
 
         // id is already in db
@@ -65,13 +59,13 @@ co(function *main() {
           if (!equal) {
             // update record
             const updateQuery = 'UPDATE oapen_data SET timestamp = NOW() AT TIME ZONE \'utc\', data = $1 WHERE id = $2::int';
-            yield query(updateQuery, [product, product.RecordReference[0]]);
+            yield db.query(updateQuery, [product, product.RecordReference[0]]);
           }
         // id not yet in db
         } else {
           // add data to db
           const insertQuery = 'INSERT INTO oapen_data(id, timestamp, data) VALUES($1::int, NOW() AT TIME ZONE \'utc\', $2)';
-          yield query(insertQuery, [product.RecordReference[0], product]);
+          yield db.query(insertQuery, [product.RecordReference[0], product]);
         }
       }
       this.body = {message: 'success'};

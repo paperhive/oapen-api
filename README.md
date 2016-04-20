@@ -18,3 +18,9 @@ sudo docker run -p 5555:5432 --name postgres -e POSTGRES_PASSWORD=mysecretpasswo
 ```
 sudo docker exec -it postgres psql -U postgres
 ```
+
+## To start Docker after reboot
+
+```
+sudo docker start postgres
+```
