@@ -51,6 +51,8 @@ co(function *main() {
       const parsedData = yield bluebird.promisify(parseString)(xml);
       const results = parsedData.ONIXMessage;
 
+      this.body = {message: 'success'};
+
       // upsert
       for (const product of results.Product) {
         // check if id is already in db
@@ -74,7 +76,6 @@ co(function *main() {
           yield query(insertQuery, [product.RecordReference[0], product]);
         }
       }
-      this.body = {message: 'success'};
     });
 
   app
