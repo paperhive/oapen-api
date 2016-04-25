@@ -28,6 +28,15 @@ co(function *main() {
     // returns object (id, timestamp, data) of record with corresponding id
     .get('/records/:id', function *getRecord() {
       const selectData = 'SELECT * FROM oapen_data WHERE id = $1::int';
+      const id = parseInt(this.params.id, 10);
+      if (!Number.isInteger(id) || id < 0 || id > (Math.pow(2, 31) - 1)) {
+        this.body = {
+          code: '422',
+          message: 'Unprocessable Entity',
+        };
+        this.status = 422;
+        return;
+      }
       const resp = yield db.query(selectData, [this.params.id]);
 
       if (resp.rows.length === 0) {
