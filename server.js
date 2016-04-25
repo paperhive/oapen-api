@@ -29,7 +29,7 @@ co(function *main() {
     .get('/records/:id', function *getRecord() {
       const selectData = 'SELECT * FROM oapen_data WHERE id = $1::int';
       const resp = yield db.query(selectData, [this.params.id]);
-      this.body = resp.rows;
+      this.body = resp.rows[0];
     });
 
   app
