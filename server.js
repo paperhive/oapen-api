@@ -29,6 +29,15 @@ co(function *main() {
     .get('/records/:id', function *getRecord() {
       const selectData = 'SELECT * FROM oapen_data WHERE id = $1::int';
       const resp = yield db.query(selectData, [this.params.id]);
+
+      if (resp.rows.length === 0) {
+        this.body = {
+          code: '404',
+          message: 'Not Found',
+        };
+        this.status = 404;
+        return;
+      }
       this.body = resp.rows[0];
     });
 
