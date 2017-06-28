@@ -7,8 +7,8 @@ const pg = require('pg');
 pg.defaults.ssl = !(process.env.DATABASE_SSL === 'false');
 
 exports.init = co.wrap(function *init() {
-  const connect = bluebird.promisify(pg.connect, {context: pg});
-  const client = yield connect(process.env.DATABASE_URL);
+  const client = new pg.Client({connectionString: process.env.DATABASE_URL});
+  yield bluebird.promisify(client.connect, {context: client});
   const query = bluebird.promisify(client.query, {context: client});
   console.log('Database connection ready');
 
