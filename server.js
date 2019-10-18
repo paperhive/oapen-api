@@ -9,6 +9,10 @@ co(function *main() {
   const db = yield database.init();
 
   router
+    .get('/', function *getRecords() {
+      this.body = { status: 'running' }
+    })
+
     // returns array of all ids (= RecordReferences)
     .get('/records', function *getRecords() {
       const updatedAfter = this.request.query.updatedAfter;
